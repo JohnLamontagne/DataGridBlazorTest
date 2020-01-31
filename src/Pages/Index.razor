@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject HttpClient Http
+@implements IDisposable
+@inject IJSRuntime JSRuntime
+
+
+@if (!dataLoaded)
+{
+    <InputFile OnChange="HandleSelection" />
+}
+else
+{
+    <DataGrid TItem="DataRow"
+            Data="@dataSource"
+            Filterable="true"
+            ShowPager="true"
+            PageSize="15"
+            @bind-SelectedRow="@selectedRow"
+            @ref="dataGrid">
+
+        @foreach (var fieldName in dataSource.FieldNames)
+        {
+            string fieldPath = nameof(DataRow.ObjectRepresentation) + "." + fieldName;
+            <DataGridColumn TItem="DataRow" Field="@fieldPath" Caption="@fieldName" Sortable="true" />
+        }
+
+    </DataGrid>
+}
+
+@code{
+
+    bool dataLoaded = false;
+    string status = "";
+
+
+    DataGrid<DataRow> dataGrid;
+    DataSource dataSource;
+    DataRow selectedRow;
+
+
+    public void Dispose()
+    {
+    }
+
+    async Task HandleSelection(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            // Just load into .NET memory to show it can be done
+            // Alternatively it could be saved to disk, or parsed in memory, or similar
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            ms.Position = 0;
+
+            dataSource = DataSource.LoadFromCSV(ms);
+
+            dataLoaded = true;
+            StateHasChanged();
+        }
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+    }
+}
